@@ -452,8 +452,9 @@
 
         // Load saved connection info
         document.addEventListener('DOMContentLoaded', function() {
-            const savedUrl = localStorage.getItem('supabase_url');
-            const savedKey = localStorage.getItem('supabase_key');
+		const url = 'https://ukucsiqtdlrupcdmvlto.supabase.co';
+		const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrdWNzaXF0ZGxydXBjZG12bHRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyODYwNzMsImV4cCI6MjA2NDg2MjA3M30.e8KXzd5zRefb9XL59XwwPhLy98MS176jfA15lvD88oQ';
+		const supabase = supabase.createClient(supabaseUrl, supabaseKey);
             
             if (savedUrl && savedKey) {
                 document.getElementById('supabaseUrl').value = savedUrl;
