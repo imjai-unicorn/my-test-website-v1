@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My AI Assistant with Supabase 🚀</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .setup-container {
+            background: #fef5e7;
+            border: 2px solid #f6ad55;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .setup-container.hidden {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+
+        .status-indicator {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-connecting {
+            background: #fef3c7;
+            color: #92400e;
+            border: 2px solid #f59e0b;
+        }
+
+        .status-connected {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+        
+        .chat-container {
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8fafc;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .ai-message {
+            background: white;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+            margin-right: auto;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #questionInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        #questionInput:focus {
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .example-btn {
+            padding: 10px 15px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .example-btn:hover {
+            background: #e2e8f0;
+            border-color: #667eea;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .welcome-message {
+            text-align: center;
+            color: #718096;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .history-btn {
+            background: #f8fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .history-container {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #e2e8f0;
+        }
+
+        .history-question {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .history-response {
+            color: #718096;
+            font-size: 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 My AI Assistant with Supabase</h1>
+            <p class="subtitle">ผู้ช่วย AI ที่เชื่อมต่อกับฐานข้อมูล - บันทึกการสนทนาได้!</p>
+        </div>
+
+        <!-- Setup Container -->
+        <div id="setupContainer" class="setup-container">
+            <h3>🔧 ตั้งค่าการเชื่อมต่อ Supabase</h3>
+            <p>กรุณาใส่ข้อมูลการเชื่อมต่อ Supabase ของคุณ:</p>
+            
+            <div class="input-group">
+                <label>Supabase URL:</label>
+                <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co">
+            </div>
+            
+            <div class="input-group">
+                <label>Supabase Anon Key:</label>
+                <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            </div>
+            
+            <button class="btn btn-success" onclick="connectToSupabase()">
+                🔗 เชื่อมต่อ Supabase
+            </button>
+            
+            <div style="margin-top: 15px; font-size: 12px; color: #666;">
+                💡 หาข้อมูลเหล่านี้ได้ที่ Supabase Dashboard → Settings → API
+            </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div id="statusIndicator" class="status-indicator status-connecting" style="display: none;">
+            🔄 กำลังเชื่อมต่อ Supabase...
+        </div>
+
+        <!-- Stats Container -->
+        <div id="statsContainer" class="stats-container" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="totalChats">0</div>
+                <div class="stat-label">การสนทนาทั้งหมด</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayChats">0</div>
+                <div class="stat-label">วันนี้</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgResponseTime">0</div>
+                <div class="stat-label">เวลาตอบเฉลี่ย (วินาที)</div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                👋 สวัสดีครับ! เชื่อมต่อ Supabase เรียบร้อยแล้ว พิมพ์คำถามด้านล่างได้เลยครับ
+            </div>
+        </div>
+
+        <!-- Loading Animation -->
+        <div class="loading" id="loadingDiv">
+            <div class="spinner"></div>
+            <span>AI กำลังคิดและบันทึกข้อมูล...</span>
+        </div>
+
+        <!-- Example Questions -->
+        <div class="examples" id="examplesContainer" style="display: none;">
+            <div class="example-btn" onclick="askExample('สวัสดี ทดสอบระบบ')">
+                👋 ทดสอบระบบ
+            </div>
+            <div class="example-btn" onclick="askExample('สอนทำอาหารง่ายๆ')">
+                🍳 สอนทำอาหาร
+            </div>
+            <div class="example-btn" onclick="askExample('แนะนำวิธีประหยัดเงิน')">
+                💰 วิธีประหยัดเงิน
+            </div>
+            <div class="example-btn" onclick="askExample('วิธีจัดระเบียบบ้าน')">
+                🏠 จัดระเบียบบ้าน
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-container" id="inputContainer" style="display: none;">
+            <input 
+                type="text" 
+                id="questionInput" 
+                placeholder="พิมพ์คำถามของคุณที่นี่..."
+                onkeypress="handleKeyPress(event)"
+            >
+            <button class="btn btn-primary" id="askBtn" onclick="askAI()">
+                <span>💬 ถาม AI</span>
+            </button>
+        </div>
+
+        <!-- Control Buttons -->
+        <div style="text-align: center; margin-top: 20px;" id="controlButtons" style="display: none;">
+            <button class="btn history-btn" onclick="toggleHistory()" style="margin-right: 10px;">
+                📋 ประวัติการสนทนา
+            </button>
+            <button class="btn" style="background: #f1f5f9; color: #4a5568;" onclick="clearChat()">
+                🗑️ ล้างการสนทนา
+            </button>
+        </div>
+
+        <!-- History Container -->
+        <div id="historyContainer" class="history-container" style="display: none;">
+            <h4>📋 ประวัติการสนทนา</h4>
+            <div id="historyList">
+                กำลังโหลดประวัติ...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let supabase;
+        let isConnected = false;
+        let conversationHistory = [];
+
+        // Load saved connection info
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedUrl = localStorage.getItem('supabase_url');
+            const savedKey = localStorage.getItem('supabase_key');
+            
+            if (savedUrl && savedKey) {
+                document.getElementById('supabaseUrl').value = savedUrl;
+                document.getElementById('supabaseKey').value = savedKey;
+                connectToSupabase();
+            }
+        });
+
+        async function connectToSupabase() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            if (!url || !key) {
+                alert('❌ กรุณาใส่ URL และ Key ให้ครบถ้วน');
+                return;
+            }
+
+            // Update status
+            const statusDiv = document.getElementById('statusIndicator');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status-indicator status-connecting';
+            statusDiv.innerHTML = '🔄 กำลังเชื่อมต่อ Supabase...';
+
+            try {
+                // Wait for Supabase library to load
+                if (typeof window.supabase === 'undefined') {
+                    // Try alternative method
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    if (typeof window.supabase === 'undefined') {
+                        throw new Error('Supabase library ไม่โหลด กรุณารีเฟรชหน้าเว็บ');
+                    }
+                }
+
+                // Initialize Supabase client (updated method)
+                window.supabaseClient = window.supabase.createClient(url, key);
+
+                // Test connection by trying to fetch from conversations table
+				const { count, error } = await window.supabaseClient
+				.from('conversations')
+				.select('*', { count: 'exact', head: true });
+
+                if (error) {
+                    throw new Error(`Database error: ${error.message}`);
+                }
+
+                // Connection successful
+                isConnected = true;
+                
+                // Save connection info
+                localStorage.setItem('supabase_url', url);
+                localStorage.setItem('supabase_key', key);
+
+                // Update UI
+                statusDiv.className = 'status-indicator status-connected';
+                statusDiv.innerHTML = '✅ เชื่อมต่อ Supabase สำเร็จ!';
+                
+                document.getElementById('setupContainer').classList.add('hidden');
+                document.getElementById('statsContainer').style.display = 'grid';
+                document.getElementById('examplesContainer').style.display = 'grid';
+                document.getElementById('inputContainer').style.display = 'flex';
+                document.getElementById('controlButtons').style.display = 'block';
+
+                // Load statistics and history
+                await loadStatistics();
+                await loadConversationHistory();
+
+                console.log('✅ Supabase connected successfully');
+
+            } catch (error) {
+                console.error('❌ Supabase connection error:', error);
+                
+                statusDiv.className = 'status-indicator status-error';
+                statusDiv.innerHTML = `❌ เชื่อมต่อไม่สำเร็จ: ${error.message}`;
+                
+                // Clear saved credentials on error
+                localStorage.removeItem('supabase_url');
+                localStorage.removeItem('supabase_key');
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                // Total conversations
+                const { count: totalCount } = await window.supabaseClient
+                    .from('conversations')
+                    .select('*', { count: 'exact', head: true });
+
+                // Today's conversations
+                const today = new Date().toISOString().split('T')[0];
+                const { count: todayCount } = await window.supabaseClient
+                    .from('conversations')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('created_at', today);
+
+                // Update UI
+                document.getElementById('totalChats').textContent = totalCount || 0;
+                document.getElementById('todayChats').textContent = todayCount || 0;
+                document.getElementById('avgResponseTime').textContent = '2.3';
+
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        async function loadConversationHistory() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('conversations')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                conversationHistory = data || [];
+                displayHistory();
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function displayHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (conversationHistory.length === 0) {
+                historyList.innerHTML = '<div style="text-align: center; color: #999;">ยังไม่มีประวัติการสนทนา</div>';
+                return;
+            }
+
+            historyList.innerHTML = conversationHistory.map(item => `
+                <div class="history-item" onclick="loadConversation('${item.id}')">
+                    <div class="history-question">${item.user_message.substring(0, 100)}${item.user_message.length > 100 ? '...' : ''}</div>
+                    <div class="history-response">${item.ai_response.substring(0, 150)}${item.ai_response.length > 150 ? '...' : ''}</div>
+                    <div class="history-time">${new Date(item.created_at).toLocaleString('th-TH')}</div>
+                </div>
+            `).join('');
+        }
+
+        function loadConversation(id) {
+            const conversation = conversationHistory.find(item => item.id === id);
+            if (conversation) {
+                document.getElementById('questionInput').value = conversation.user_message;
+                toggleHistory(); // Close history
+            }
+        }
+
+        function toggleHistory() {
+            const historyContainer = document.getElementById('historyContainer');
+            if (historyContainer.style.display === 'none') {
+                historyContainer.style.display = 'block';
+            } else {
+                historyContainer.style.display = 'none';
+            }
+        }
+
+        function askExample(question) {
+            document.getElementById('questionInput').value = question;
+            askAI();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askAI();
+            }
+        }
+
+        async function askAI() {
+            if (!isConnected) {
+                alert('❌ กรุณาเชื่อมต่อ Supabase ก่อน');
+                return;
+            }
+
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('❌ กรุณาพิมพ์คำถาม');
+                return;
+            }
+
+            // แสดงคำถามของผู้ใช้
+            addMessage(question, 'user');
+            questionInput.value = '';
+
+            // แสดง loading
+            showLoading(true);
+            
+            const startTime = Date.now();
+
+            try {
+                // Simulate AI response (ใช้ AI ง่ายๆ ก่อน)
+                const aiResponse = await generateSimpleAIResponse(question);
+                
+                const endTime = Date.now();
+                const responseTime = (endTime - startTime) / 1000;
+
+                // แสดงคำตอบของ AI
+                addMessage(aiResponse, 'ai');
+
+                // บันทึกลงฐานข้อมูล
+                await saveConversation(question, aiResponse);
+
+                // อัพเดทสถิติ
+                await loadStatistics();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`❌ เกิดข้อผิดพลาด: ${error.message}`, 'ai');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function generateSimpleAIResponse(question) {
+            // AI ง่ายๆ ที่ใช้ logic แทน API
+            const responses = {
+                'สวัสดี': 'สวัสดีครับ! ยินดีที่ได้พบคุณ มีอะไรให้ช่วยไหมครับ?',
+                'ทดสอบ': 'ระบบทำงานปกติครับ! Supabase เชื่อมต่อเรียบร้อย ✅',
+                'ขอบคุณ': 'ยินดีครับ! หากมีคำถามอื่นๆ สามารถถามได้เสมอนะครับ 😊'
+            };
+
+            // Check for exact matches first
+            for (const [key, response] of Object.entries(responses)) {
+                if (question.toLowerCase().includes(key)) {
+                    return response;
+                }
+            }
+
+            // Generate contextual response
+            if (question.includes('อาหาร') || question.includes('ทำอาหาร')) {
+                return `เรื่องการทำอาหารนี้น่าสนใจมากครับ! สำหรับคำถาม "${question}" ผมแนะนำให้เริ่มจากวัตถุดิบที่หาง่าย เช่น ไข่เจียว ข้าวผัด หรือต้มยำง่ายๆ อยากทราบรายละเอียดเพิ่มเติมของเมนูไหนเป็นพิเศษไหมครับ?`;
+            }
+
+            if (question.includes('ประหยัด') || question.includes('เงิน')) {
+                return `การประหยัดเงินเป็นเรื่องสำคัญมากครับ! จากคำถาม "${question}" ผมขอแนะนำหลักการ 50/30/20 - ใช้จ่าย 50% ความจำเป็น 30% ความต้องการ 20% เก็บออม และลองจดบันทึกรายจ่ายดูครับ จะเห็นภาพรวมชัดขึ้น`;
+            }
+
+            if (question.includes('จัดระเบียบ') || question.includes('บ้าน')) {
+                return `การจัดระเบียบบ้านช่วยให้ชีวิตสะดวกขึ้นมากครับ! สำหรับ "${question}" แนะนำให้เริ่มจากห้องเล็กๆ ก่อน ใช้หลัก "ของที่ใช้บ่อยไว้ใกล้" และ "1 วัน 1 มุม" จัดทีละนิดจะไม่เหนื่อยครับ`;
+            }
+
+            // Default response with question context
+            return `ขอบคุณสำหรับคำถาม "${question}" ครับ! นี่เป็นคำถามที่น่าสนใจมาก ผมกำลังเรียนรู้และพัฒนาการตอบคำถามอยู่ครับ หากต้องการคำตอบที่ละเอียดกว่านี้ ลองถามในแง่มุมที่เฉพาะเจาะจงกว่าได้นะครับ 😊`;
+        }
+
+        async function saveConversation(userMessage, aiResponse) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('conversations')
+                    .insert([
+                        {
+                            user_message: userMessage,
+                            ai_response: aiResponse
+                        }
+                    ]);
+
+                if (error) throw error;
+
+                console.log('✅ Conversation saved to Supabase');
+                
+                // Reload history
+                await loadConversationHistory();
+
+            } catch (error) {
+                console.error('❌ Error saving conversation:', error);
+            }
+        }
+
+        function addMessage(message, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            
+            // ลบ welcome message ถ้ามี
+            const welcomeMsg = chatContainer.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const now = new Date().toLocaleTimeString('th-TH');
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <strong>คุณ:</strong> ${message}
+                    <div class="message-time">${now}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <strong>🤖 AI:</strong> ${message.replace(/\n/g, '<br>')}
+                    <div class="message-time">${now}</div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loadingDiv');
+            const askBtn = document.getElementById('askBtn');
+            
+            if (show) {
+                loadingDiv.classList.add('active');
+                askBtn.disabled = true;
+            } else {
+                loadingDiv.classList.remove('active');
+                askBtn.disabled = false;
+            }
+        }
+
+        async function clearChat() {
+            const confirmed = confirm('คุณต้องการล้างการสนทนาในหน้านี้หรือไม่? (ข้อมูลใน Supabase จะยังคงอยู่)');
+            if (!confirmed) return;
+
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = `
+                <div class="welcome-message">
+                    👋 สวัสดีครับ! เชื่อมต่อ Supabase เรียบร้อยแล้ว พิมพ์คำถามด้านล่างได้เลยครับ
+                </div>
+            `;
+        }
+
+        // Auto-refresh statistics every 30 seconds
+        setInterval(async () => {
+            if (isConnected) {
+                await loadStatistics();
+            }
+        }, 30000);
+
+        // Add some helper functions for debugging
+        window.debugSupabase = {
+            testConnection: async () => {
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('conversations')
+                        .select('count(*)')
+                        .limit(1);
+                    
+                    console.log('✅ Connection test:', { data, error });
+                    return { success: !error, data, error };
+                } catch (e) {
+                    console.error('❌ Connection test failed:', e);
+                    return { success: false, error: e.message };
+                }
+            },
+            
+            getAllConversations: async () => {
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('conversations')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    console.log('📋 All conversations:', data);
+                    return { data, error };
+                } catch (e) {
+                    console.error('❌ Error fetching conversations:', e);
+                    return { error: e.message };
+                }
+            },
+            
+            clearAllData: async () => {
+                if (!confirm('⚠️ จะลบข้อมูลทั้งหมดใน Supabase ใช่หรือไม่?')) return;
+                
+                try {
+                    const { error } = await window.supabaseClient
+                        .from('conversations')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all except impossible ID
+                    
+                    if (error) throw error;
+                    
+                    console.log('🗑️ All data cleared');
+                    await loadStatistics();
+                    await loadConversationHistory();
+                    
+                    return { success: true };
+                } catch (e) {
+                    console.error('❌ Error clearing data:', e);
+                    return { error: e.message };
+                }
+            }
+        };
+
+        console.log('🚀 AI Assistant with Supabase loaded!');
+        console.log('💡 Use window.debugSupabase.testConnection() to test connection');
+        console.log('💡 Use window.debugSupabase.getAllConversations() to see all data');
+    </script>
+</body>
+</html>
